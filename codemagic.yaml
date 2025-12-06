@@ -7,36 +7,27 @@ workflows:
       flutter: "3.22.0"
     
     scripts:
-      - name: Disable analytics
-        script: |
-          flutter config --no-analytics
-      
       - name: Setup Firebase
         script: |
           mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
       
-      - name: Install ALL dependencies
+      - name: Install packages
         script: |
           flutter pub get
-          echo "✅ Dependencies installed"
+          echo "Packages installed"
       
       - name: Build APK
         script: |
-          echo "🏗️ Building APK..."
           flutter clean
-          flutter build apk --release --no-shrink
+          flutter build apk --release
       
-      - name: Verify APK
+      - name: Check APK
         script: |
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            echo "✅✅✅ APK BUILT SUCCESSFULLY! ✅✅✅"
-            echo "📱 Location: build/app/outputs/flutter-apk/app-release.apk"
-            echo "📊 Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+            echo "✅ APK built: build/app/outputs/flutter-apk/app-release.apk"
           else
-            echo "❌ APK not found!"
-            echo "🔍 Looking for APK files..."
-            find . -name "*.apk" -type f
+            echo "❌ No APK found"
           fi
     
     artifacts:
