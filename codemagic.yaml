@@ -1,54 +1,50 @@
-workflows:
-  speedwash-android:
-    name: SpeedWash APK
-    environment:
-      groups:
-        - firebase_credentials
-      flutter: "3.22.0"
-    
-    scripts:
-      - name: Disable analytics
-        script: |
-          flutter config --no-analytics
-      
-      - name: Create fresh Flutter project
-        script: |
-          echo "🔄 Creating fresh Flutter project..."
-          
-          # Save our main.dart
-          cp lib/main.dart /tmp/main.dart
-          
-          # Create fresh project
-          flutter create --template app --org com.speedwash --platforms android .
-          
-          # Restore our code
-          cp /tmp/main.dart lib/main.dart
-          
-          echo "✅ Fresh project created"
-      
-      - name: Setup Firebase
-        script: |
-          echo "🔥 Setting up Firebase..."
-          echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
-      
-      - name: Install minimal dependencies
-        script: |
-          echo "📦 Installing dependencies..."
-          flutter pub get
-      
-      - name: Build APK
-        script: |
-          echo "🏗️ Building APK..."
-          flutter build apk --release --no-shrink
-          
-          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            echo "✅ APK BUILT SUCCESSFULLY!"
-            echo "📱 APK location: build/app/outputs/flutter-apk/app-release.apk"
-            echo "📊 APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
-          else
-            echo "❌ APK not found!"
-            find . -name "*.apk" -type f
-          fi
-    
-    artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+name: speedwash_premium
+description: SpeedWash Premium Car Wash App
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.17.5
+  firebase_messaging: ^14.7.10
+  
+  # Payments
+  razorpay_flutter: ^1.4.0
+  
+  # Location
+  geolocator: ^10.1.1
+  
+  # Permissions
+  permission_handler: ^10.4.5
+  
+  # URL Launcher
+  url_launcher: ^6.1.0
+  
+  # Share
+  share_plus: ^7.2.2
+  
+  # Vibration
+  vibration: ^1.9.0
+  
+  # Date/Time
+  intl: ^0.18.1
+  
+  # UI - Add these
+  google_fonts: ^4.0.5
+  carousel_slider: ^4.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.3
+
+flutter:
+  uses-material-design: true
