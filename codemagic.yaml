@@ -1,130 +1,25 @@
 workflows:
   speedwash-android:
-    name: SpeedWash Android APK
+    name: SpeedWash APK
     environment:
       groups:
         - firebase_credentials
-      flutter: stable
+      flutter: "3.22.0"
     
     scripts:
-      # 1. Clean project
-      - name: Clean project
-        script: |
-          echo "🧹 Cleaning project..."
-          flutter clean
-      
-      # 2. Setup Firebase
       - name: Setup Firebase
         script: |
-          echo "🔥 Setting up Firebase..."
-          mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
-          echo "✅ Firebase config created"
       
-      # 3. Fix Android files
-      - name: Fix Android files
+      - name: Install dependencies
         script: |
-          echo "🤖 Fixing Android files..."
-          
-          # Create MainActivity.kt if missing
-          mkdir -p android/app/src/main/kotlin/com/speedwash/premium
-          cat > android/app/src/main/kotlin/com/speedwash/premium/MainActivity.kt << 'EOF'
-          package com.speedwash.premium
-          import io.flutter.embedding.android.FlutterActivity
-          class MainActivity: FlutterActivity() {}
-          EOF
-          
-          # Update build.gradle for v2 embedding
-          cat > android/app/build.gradle << 'EOF'
-          def localProperties = new Properties()
-          def localPropertiesFile = rootProject.file('local.properties')
-          if (localPropertiesFile.exists()) {
-              localPropertiesFile.withReader('UTF-8') { reader ->
-                  localProperties.load(reader)
-              }
-          }
-          def flutterRoot = localProperties.getProperty('flutter.sdk')
-          if (flutterRoot == null) {
-              throw new GradleException("Flutter SDK not found.")
-          }
-          def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-          if (flutterVersionCode == null) {
-              flutterVersionCode = '1'
-          }
-          def flutterVersionName = localProperties.getProperty('flutter.versionName')
-          if (flutterVersionName == null) {
-              flutterVersionName = '1.0'
-          }
-          apply plugin: 'com.android.application'
-          apply plugin: 'kotlin-android'
-          apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-          android {
-              namespace "com.speedwash.premium"
-              compileSdkVersion 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-              sourceSets {
-                  main.java.srcDirs += 'src/main/kotlin'
-              }
-              defaultConfig {
-                  applicationId "com.speedwash.premium"
-                  minSdkVersion 21
-                  targetSdkVersion 34
-                  versionCode flutterVersionCode.toInteger()
-                  versionName flutterVersionName
-                  multiDexEnabled true
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                  }
-              }
-          }
-          flutter {
-              source '../..'
-          }
-          dependencies {
-              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-              implementation platform('com.google.firebase:firebase-bom:32.5.0')
-              implementation 'com.google.firebase:firebase-analytics'
-              implementation 'androidx.multidex:multidex:2.0.1'
-          }
-          apply plugin: 'com.google.gms.google-services'
-          EOF
-          
-          echo "✅ Android files fixed"
+          flutter pub get
       
-      # 4. Build APK
       - name: Build APK
         script: |
-          echo "🏗️ Building APK..."
-          flutter pub get
-          flutter build apk --release --no-shrink
-          echo "✅ APK built successfully"
-      
-      # 5. Collect artifacts
-      - name: Collect artifacts
-        script: |
-          echo "📦 Collecting artifacts..."
-          mkdir -p artifacts
-          cp build/app/outputs/flutter-apk/app-release.apk artifacts/speedwash.apk
-          echo "📊 APK size: $(du -h artifacts/speedwash.apk | cut -f1)"
+          flutter build apk --release
+          echo "✅ Build complete!"
+          ls -la build/app/outputs/flutter-apk/
     
     artifacts:
-      - artifacts/*.apk
-      - build/app/outputs/flutter-apk/*.apk
-    
-    publishing:
-      email:
-        recipients:
-          - your-email@example.com
-        notify:
-          success: true
-          failure: true
+      - build/app/outputs/flutter-apk/app-release.apk
