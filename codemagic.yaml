@@ -4,105 +4,16 @@ workflows:
     environment:
       groups:
         - firebase_credentials
-      vars:
-        PACKAGE_NAME: "com.speedwash.premium"
-      flutter: "3.22.0"  # Fixed version
+      flutter: stable
     
     scripts:
-      # 1. CREATE FRESH FLUTTER PROJECT
-      - name: Create fresh Flutter project
+      # 1. Clean project
+      - name: Clean project
         script: |
-          echo "🔄 Creating fresh Flutter project..."
-          cd /tmp
-          flutter create --template app --org com.speedwash speedwash_fresh
-          cd speedwash_fresh
-          
-          # Copy our code
-          cp -r /tmp/speedwash_fresh/* $CM_BUILD_DIR/
-          cd $CM_BUILD_DIR
-          echo "✅ Fresh project created"
+          echo "🧹 Cleaning project..."
+          flutter clean
       
-      # 2. COPY OUR SOURCE CODE
-      - name: Copy source code
-        script: |
-          echo "📋 Copying source code..."
-          
-          # Save our main.dart temporarily
-          cp lib/main.dart /tmp/main.dart
-          
-          # Overwrite with fresh project files
-          cp -r /tmp/speedwash_fresh/* ./
-          
-          # Restore our main.dart
-          cp /tmp/main.dart lib/main.dart
-          
-          # Keep our pubspec.yaml (with dependencies)
-          cp /tmp/speedwash_fresh/pubspec.yaml pubspec.yaml.backup
-          echo "✅ Source code copied"
-      
-      # 3. UPDATE PUBSPEC.YAML WITH DEPENDENCIES
-      - name: Update dependencies
-        script: |
-          echo "📦 Updating dependencies..."
-          cat > pubspec.yaml << 'EOF'
-name: speedwash_premium
-description: SpeedWash Premium Car Wash App
-version: 1.0.0+1
-publish_to: 'none'
-
-environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.22.0"
-
-dependencies:
-  flutter:
-    sdk: flutter
-  
-  # Firebase
-  firebase_core: ^4.2.1
-  firebase_auth: ^6.1.2
-  cloud_firestore: ^6.1.0
-  firebase_messaging: ^16.0.4
-  
-  # Payments
-  razorpay_flutter: ^1.4.0
-  
-  # Location
-  geolocator: ^14.0.2
-  
-  # Permissions
-  permission_handler: ^12.0.1
-  
-  # URL Launcher
-  url_launcher: ^6.3.2
-  
-  # Share
-  share_plus: ^12.0.1
-  
-  # Vibration
-  vibration: ^3.1.4
-  
-  # Date/Time
-  intl: ^0.20.2
-  
-  # UI
-  google_fonts: ^6.3.3
-  carousel_slider: ^5.1.1
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true
-  
-  assets:
-    - assets/images/
-EOF
-          echo "✅ Dependencies updated"
-      
-      # 4. SETUP FIREBASE
+      # 2. Setup Firebase
       - name: Setup Firebase
         script: |
           echo "🔥 Setting up Firebase..."
@@ -110,140 +21,101 @@ EOF
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
           echo "✅ Firebase config created"
       
-      # 5. UPDATE ANDROID CONFIG
-      - name: Update Android config
+      # 3. Fix Android files
+      - name: Fix Android files
         script: |
-          echo "🤖 Updating Android config..."
+          echo "🤖 Fixing Android files..."
           
-          # Update app build.gradle for v2 embedding
+          # Create MainActivity.kt if missing
+          mkdir -p android/app/src/main/kotlin/com/speedwash/premium
+          cat > android/app/src/main/kotlin/com/speedwash/premium/MainActivity.kt << 'EOF'
+          package com.speedwash.premium
+          import io.flutter.embedding.android.FlutterActivity
+          class MainActivity: FlutterActivity() {}
+          EOF
+          
+          # Update build.gradle for v2 embedding
           cat > android/app/build.gradle << 'EOF'
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
-android {
-    namespace "com.speedwash.premium"
-    compileSdkVersion 34
-    ndkVersion "25.1.8937393"
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    defaultConfig {
-        applicationId "com.speedwash.premium"
-        minSdkVersion 21
-        targetSdkVersion 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        multiDexEnabled true
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-        }
-    }
-}
-
-flutter {
-    source '../..'
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation platform('com.google.firebase:firebase-bom:32.5.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'androidx.multidex:multidex:2.0.1'
-}
-
-apply plugin: 'com.google.gms.google-services'
-EOF
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+          def flutterRoot = localProperties.getProperty('flutter.sdk')
+          if (flutterRoot == null) {
+              throw new GradleException("Flutter SDK not found.")
+          }
+          def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+          if (flutterVersionCode == null) {
+              flutterVersionCode = '1'
+          }
+          def flutterVersionName = localProperties.getProperty('flutter.versionName')
+          if (flutterVersionName == null) {
+              flutterVersionName = '1.0'
+          }
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+          apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+          android {
+              namespace "com.speedwash.premium"
+              compileSdkVersion 34
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+              sourceSets {
+                  main.java.srcDirs += 'src/main/kotlin'
+              }
+              defaultConfig {
+                  applicationId "com.speedwash.premium"
+                  minSdkVersion 21
+                  targetSdkVersion 34
+                  versionCode flutterVersionCode.toInteger()
+                  versionName flutterVersionName
+                  multiDexEnabled true
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+          }
+          flutter {
+              source '../..'
+          }
+          dependencies {
+              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+              implementation platform('com.google.firebase:firebase-bom:32.5.0')
+              implementation 'com.google.firebase:firebase-analytics'
+              implementation 'androidx.multidex:multidex:2.0.1'
+          }
+          apply plugin: 'com.google.gms.google-services'
+          EOF
           
-          # Update AndroidManifest.xml
-          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    
-    <application
-        android:label="SpeedWash Premium"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:allowBackup="false">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-EOF
-          
-          echo "✅ Android config updated"
+          echo "✅ Android files fixed"
       
-      # 6. BUILD APK
+      # 4. Build APK
       - name: Build APK
         script: |
           echo "🏗️ Building APK..."
           flutter pub get
           flutter build apk --release --no-shrink
-          
-          echo "✅ Build complete!"
-          echo "📱 APK location: build/app/outputs/flutter-apk/app-release.apk"
-          ls -la build/app/outputs/flutter-apk/
+          echo "✅ APK built successfully"
       
-      # 7. COLLECT ARTIFACTS
+      # 5. Collect artifacts
       - name: Collect artifacts
         script: |
           echo "📦 Collecting artifacts..."
           mkdir -p artifacts
-          cp build/app/outputs/flutter-apk/app-release.apk artifacts/
-          echo "📊 APK size: $(du -h artifacts/app-release.apk | cut -f1)"
+          cp build/app/outputs/flutter-apk/app-release.apk artifacts/speedwash.apk
+          echo "📊 APK size: $(du -h artifacts/speedwash.apk | cut -f1)"
     
     artifacts:
       - artifacts/*.apk
