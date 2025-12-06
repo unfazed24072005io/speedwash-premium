@@ -4,9 +4,13 @@ workflows:
     environment:
       groups:
         - firebase_credentials
-      flutter: "3.22.0"
+      flutter: "3.38.4"  # ✅ Newer version
     
     scripts:
+      - name: Disable analytics
+        script: |
+          flutter config --no-analytics
+      
       - name: Setup Firebase
         script: |
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
@@ -18,8 +22,6 @@ workflows:
       - name: Build APK
         script: |
           flutter build apk --release
-          echo "✅ Build complete!"
-          ls -la build/app/outputs/flutter-apk/
     
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
