@@ -12,13 +12,27 @@ workflows:
         script: |
           mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
+          echo "✅ Firebase config created"
       - name: Install dependencies
         script: |
           flutter pub get
-      - name: Build APK (legacy project)
+          echo "✅ Dependencies installed"
+      - name: Build Android APK
         script: |
           flutter build apk \
             --release \
-            --no-tree-shake-icons
+            --no-shrink
+          echo "✅ APK built successfully"
+      - name: Verify APK
+        script: |
+          ls -la build/app/outputs/flutter-apk/
+          echo "📱 APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+      slack:
+        channel: '#builds'
+        notify_on_build_start: true
