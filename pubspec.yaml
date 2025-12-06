@@ -4,13 +4,14 @@ version: 1.0.0+1
 publish_to: 'none'
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"  # ✅ Changed from 3.0.0 to 3.6.0
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # Firebase - LATEST VERSIONS
+  # Firebase
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
@@ -25,21 +26,22 @@ dependencies:
   # Permissions
   permission_handler: ^12.0.1
   
-  # URL Launcher
-  url_launcher: ^6.3.2
+  # URL Launcher - VERSION FIXED
+  url_launcher: ^6.1.5  # ✅ Compatible with Dart 3.4.0
   
   # Share
-  share_plus: ^12.0.1
+  share_plus: ^7.0.0  # ✅ Older compatible version
   
   # Vibration
-  vibration: ^3.1.4
+  vibration: ^1.9.0  # ✅ Older compatible version
   
   # Date/Time
-  intl: ^0.20.2
+  intl: ^0.18.1  # ✅ Older compatible version
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^2.0.0  # ✅ Older version
 
 flutter:
   uses-material-design: true
