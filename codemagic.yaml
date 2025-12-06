@@ -7,32 +7,48 @@ workflows:
       flutter: "3.22.0"
     
     scripts:
+      - name: Disable analytics
+        script: |
+          flutter config --no-analytics
+      
+      - name: Create fresh Flutter project
+        script: |
+          echo "🔄 Creating fresh Flutter project..."
+          
+          # Save our main.dart
+          cp lib/main.dart /tmp/main.dart
+          
+          # Create fresh project
+          flutter create --template app --org com.speedwash --platforms android .
+          
+          # Restore our code
+          cp /tmp/main.dart lib/main.dart
+          
+          echo "✅ Fresh project created"
+      
       - name: Setup Firebase
         script: |
-          mkdir -p android/app
+          echo "🔥 Setting up Firebase..."
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
       
-      - name: Force v2 embedding
+      - name: Install minimal dependencies
         script: |
-          # Add v2 embedding flag
-          echo "flutterEmbedding=2" >> android/local.properties
-      
-      - name: Build APK with v2
-        script: |
+          echo "📦 Installing dependencies..."
           flutter pub get
-          flutter build apk --release --no-shrink
       
-      - name: Verify APK
+      - name: Build APK
         script: |
+          echo "🏗️ Building APK..."
+          flutter build apk --release --no-shrink
+          
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            echo "✅ APK built successfully!"
-            cp build/app/outputs/flutter-apk/app-release.apk ./speedwash.apk
-            echo "📱 APK size: $(du -h speedwash.apk | cut -f1)"
+            echo "✅ APK BUILT SUCCESSFULLY!"
+            echo "📱 APK location: build/app/outputs/flutter-apk/app-release.apk"
+            echo "📊 APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
           else
             echo "❌ APK not found!"
             find . -name "*.apk" -type f
           fi
     
     artifacts:
-      - speedwash.apk
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/app-release.apk
