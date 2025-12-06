@@ -4,7 +4,7 @@ workflows:
     environment:
       groups:
         - firebase_credentials
-      flutter: stable
+      flutter: "3.22.0"
     
     scripts:
       - name: Setup Firebase
@@ -12,12 +12,27 @@ workflows:
           mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
       
-      - name: Build APK
+      - name: Force v2 embedding
+        script: |
+          # Add v2 embedding flag
+          echo "flutterEmbedding=2" >> android/local.properties
+      
+      - name: Build APK with v2
         script: |
           flutter pub get
-          flutter build apk --release
-          echo "APK built at: build/app/outputs/flutter-apk/app-release.apk"
-          ls -la build/app/outputs/flutter-apk/
+          flutter build apk --release --no-shrink
+      
+      - name: Verify APK
+        script: |
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            echo "✅ APK built successfully!"
+            cp build/app/outputs/flutter-apk/app-release.apk ./speedwash.apk
+            echo "📱 APK size: $(du -h speedwash.apk | cut -f1)"
+          else
+            echo "❌ APK not found!"
+            find . -name "*.apk" -type f
+          fi
     
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - speedwash.apk
+      - build/app/outputs/flutter-apk/*.apk
