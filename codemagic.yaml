@@ -4,24 +4,20 @@ workflows:
     environment:
       groups:
         - firebase_credentials
-      flutter: "3.38.4"  # ✅ Newer version
+      flutter: stable
     
     scripts:
-      - name: Disable analytics
-        script: |
-          flutter config --no-analytics
-      
       - name: Setup Firebase
         script: |
+          mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
-      
-      - name: Install dependencies
-        script: |
-          flutter pub get
       
       - name: Build APK
         script: |
+          flutter pub get
           flutter build apk --release
+          echo "APK built at: build/app/outputs/flutter-apk/app-release.apk"
+          ls -la build/app/outputs/flutter-apk/
     
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
