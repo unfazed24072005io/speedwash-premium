@@ -32,7 +32,8 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - sutirthasoor7@gmail.com
       slack:
         channel: '#builds'
         notify_on_build_start: true
+
