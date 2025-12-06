@@ -10,41 +10,20 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Firebase
+  # ✅ ADD THESE - Your main.dart NEEDS them:
   firebase_core: ^2.32.0
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.17.5
   firebase_messaging: ^14.7.10
-  
-  # Payments
   razorpay_flutter: ^1.4.0
-  
-  # Location
   geolocator: ^10.1.1
-  
-  # Permissions
   permission_handler: ^10.4.5
-  
-  # URL Launcher
   url_launcher: ^6.1.0
-  
-  # Share
   share_plus: ^7.2.2
-  
-  # Vibration
   vibration: ^1.9.0
-  
-  # Date/Time
   intl: ^0.18.1
-  
-  # UI - Add these
   google_fonts: ^4.0.5
-  carousel_slider: ^4.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.3
-
-flutter:
-  uses-material-design: true
