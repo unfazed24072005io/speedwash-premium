@@ -7,39 +7,241 @@ workflows:
       vars:
         PACKAGE_NAME: "com.speedwash.premium"
       flutter: stable
+    
     scripts:
+      # 1. SETUP
+      - name: Setup project structure
+        script: |
+          echo "📁 Creating required directories..."
+          mkdir -p android/app/src/main/kotlin/com/speedwash/premium
+          mkdir -p ios/Runner
+          echo "✅ Directories created"
+      
+      # 2. SETUP FIREBASE
       - name: Setup Firebase
         script: |
+          echo "🔥 Setting up Firebase..."
           mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
           echo "✅ Firebase config created"
+          ls -la android/app/google-services.json
       
-      - name: Install dependencies
+      # 3. CREATE MISSING ANDROID FILES
+      - name: Create Android files
         script: |
-          flutter pub get
-          echo "✅ Dependencies installed"
+          echo "🤖 Creating Android files..."
+          
+          # Create MainActivity.kt
+          cat > android/app/src/main/kotlin/com/speedwash/premium/MainActivity.kt << 'EOF'
+          package com.speedwash.premium
+          import io.flutter.embedding.android.FlutterActivity
+          class MainActivity: FlutterActivity() {}
+          EOF
+          
+          # Create AndroidManifest.xml
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.speedwash.premium">
+              
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              
+              <application
+                  android:label="SpeedWash Premium"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:allowBackup="false">
+                  
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      
+                      <meta-data
+                          android:name="io.flutter.embedding.android.NormalTheme"
+                          android:resource="@style/NormalTheme"/>
+                          
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+          
+          # Update build.gradle with v2 embedding
+          cat > android/app/build.gradle << 'EOF'
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+          
+          def flutterRoot = localProperties.getProperty('flutter.sdk')
+          if (flutterRoot == null) {
+              throw new GradleException("Flutter SDK not found.")
+          }
+          
+          def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+          if (flutterVersionCode == null) {
+              flutterVersionCode = '1'
+          }
+          
+          def flutterVersionName = localProperties.getProperty('flutter.versionName')
+          if (flutterVersionName == null) {
+              flutterVersionName = '1.0'
+          }
+          
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+          apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+          
+          android {
+              namespace "com.speedwash.premium"
+              compileSdkVersion 34
+              ndkVersion "25.1.8937393"
+              
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+              
+              sourceSets {
+                  main.java.srcDirs += 'src/main/kotlin'
+              }
+              
+              defaultConfig {
+                  applicationId "com.speedwash.premium"
+                  minSdkVersion 21
+                  targetSdkVersion 34
+                  versionCode flutterVersionCode.toInteger()
+                  versionName flutterVersionName
+                  multiDexEnabled true
+              }
+              
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+          }
+          
+          flutter {
+              source '../..'
+          }
+          
+          dependencies {
+              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+              implementation platform('com.google.firebase:firebase-bom:32.5.0')
+              implementation 'com.google.firebase:firebase-analytics'
+              implementation 'androidx.multidex:multidex:2.0.1'
+          }
+          
+          apply plugin: 'com.google.gms.google-services'
+          EOF
+          
+          echo "✅ Android files created"
       
-      - name: Build Android APK
+      # 4. CREATE iOS FILE (required even for Android build)
+      - name: Create iOS files
         script: |
+          echo "🍎 Creating iOS files..."
+          cat > ios/Runner/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>en</string>
+              <key>CFBundleExecutable</key>
+              <string>Runner</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.speedwash.premium</string>
+              <key>CFBundleName</key>
+              <string>SpeedWash</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>UILaunchStoryboardName</key>
+              <string>LaunchScreen</string>
+              <key>UIMainStoryboardFile</key>
+              <string>Main</string>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
+          echo "✅ iOS files created"
+      
+      # 5. CLEAN & BUILD
+      - name: Clean and build APK
+        script: |
+          echo "🧹 Cleaning previous builds..."
           flutter clean
+          
+          echo "📦 Getting dependencies..."
+          flutter pub get
+          
+          echo "🏗️ Building APK..."
           flutter build apk \
             --release \
+            --no-shrink \
+            --no-tree-shake-icons \
             --target-platform=android-arm,android-arm64
-          echo "✅ APK built successfully"
+          
+          echo "✅ Build complete!"
+          
+          # Verify APK exists
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+              echo "📱 APK FOUND: build/app/outputs/flutter-apk/app-release.apk"
+              echo "📊 APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+          else
+              echo "❌ APK NOT FOUND!"
+              echo "🔍 Searching for APK files..."
+              find . -name "*.apk" -type f
+          fi
       
-      - name: Verify and copy APK
+      # 6. PREPARE ARTIFACTS
+      - name: Prepare artifacts
         script: |
-          # List all APK files
-          find . -name "*.apk" -type f
+          echo "📦 Preparing artifacts..."
+          mkdir -p artifacts
           
-          # Copy APK to root for easier access
-          cp build/app/outputs/flutter-apk/app-release.apk ./speedwash-release.apk
+          # Copy APK to artifacts folder
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+              cp build/app/outputs/flutter-apk/app-release.apk artifacts/speedwash-release.apk
+              echo "✅ APK copied to artifacts/speedwash-release.apk"
+          fi
           
-          # Show APK size
-          echo "📱 APK size: $(du -h ./speedwash-release.apk | cut -f1)"
+          # List all artifacts
+          echo "📁 Artifacts directory contents:"
+          ls -la artifacts/
     
     artifacts:
-      - speedwash-release.apk
+      - artifacts/**/*
       - build/app/outputs/flutter-apk/**/*.apk
       - build/app/outputs/bundle/**/*.aab
     
@@ -47,6 +249,13 @@ workflows:
       email:
         recipients:
           - sutirthasoor7@gmail.com
+        notify:
+          success: true
+          failure: true
+      
+      slack:
+        channel: '#builds'
+        notify_on_build_start: false
         notify:
           success: true
           failure: true
