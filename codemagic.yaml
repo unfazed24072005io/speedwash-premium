@@ -13,27 +13,40 @@ workflows:
           mkdir -p android/app
           echo $FIREBASE_CONFIG | base64 --decode > android/app/google-services.json
           echo "✅ Firebase config created"
+      
       - name: Install dependencies
         script: |
           flutter pub get
           echo "✅ Dependencies installed"
+      
       - name: Build Android APK
         script: |
+          flutter clean
           flutter build apk \
             --release \
-            --no-shrink
+            --target-platform=android-arm,android-arm64
           echo "✅ APK built successfully"
-      - name: Verify APK
+      
+      - name: Verify and copy APK
         script: |
-          ls -la build/app/outputs/flutter-apk/
-          echo "📱 APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+          # List all APK files
+          find . -name "*.apk" -type f
+          
+          # Copy APK to root for easier access
+          cp build/app/outputs/flutter-apk/app-release.apk ./speedwash-release.apk
+          
+          # Show APK size
+          echo "📱 APK size: $(du -h ./speedwash-release.apk | cut -f1)"
+    
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - speedwash-release.apk
+      - build/app/outputs/flutter-apk/**/*.apk
+      - build/app/outputs/bundle/**/*.aab
+    
     publishing:
       email:
         recipients:
           - sutirthasoor7@gmail.com
-      slack:
-        channel: '#builds'
-        notify_on_build_start: true
-
+        notify:
+          success: true
+          failure: true
